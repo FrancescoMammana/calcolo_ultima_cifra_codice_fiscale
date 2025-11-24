@@ -1,2 +1,5 @@
-# calcolo_ultimacifra_codicefiscale
-Calcola l'ultima cifra di un codice fiscale
+# calcolo_codicefiscale
+Calcola 
+- l'ultima cifra di un codice fiscale 
+- il codice fiscale dai dati anagrafici
+   
