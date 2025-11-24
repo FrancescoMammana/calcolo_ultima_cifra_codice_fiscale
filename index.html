@@ -232,15 +232,148 @@
         .info-box li {
             margin-bottom: var(--space-8);
         }
+
+        .tabs {
+            display: flex;
+            gap: var(--space-8);
+            margin-bottom: var(--space-16);
+        }
+
+        .tab {
+            flex: 1;
+            padding: var(--space-12) var(--space-16);
+            background: var(--color-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-base);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: var(--color-primary);
+            color: var(--color-btn-primary-text);
+            border-color: var(--color-primary);
+        }
+
+        .tab.active {
+            background: var(--color-primary);
+            color: var(--color-btn-primary-text);
+            border-color: var(--color-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: var(--space-12);
+        }
+
+        select {
+            width: 100%;
+            padding: var(--space-12);
+            font-size: 16px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-base);
+            background: var(--color-surface);
+            color: var(--color-text);
+            transition: border-color 0.2s;
+        }
+
+        select:focus {
+            outline: 2px solid var(--color-primary);
+            border-color: var(--color-primary);
+        }
+
+        small {
+            display: block;
+            margin-top: var(--space-8);
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Calcolo Cifra di Controllo Codice Fiscale</h1>
-        <p class="subtitle">Inserisci i primi 15 caratteri del codice fiscale per calcolare la cifra di controllo</p>
+        <h1>Calcolo Codice Fiscale Italiano</h1>
+        <p class="subtitle">Calcola il codice fiscale completo da dati anagrafici o verifica la cifra di controllo</p>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="generate">Genera da Dati</button>
+            <button class="tab" data-tab="verify">Verifica Cifra</button>
+        </div>
 
         <div class="card">
-            <form id="cfForm">
+            <form id="generateForm" class="tab-content active">
+                <div class="form-group">
+                    <label for="cognome">Cognome</label>
+                    <input type="text" id="cognome" placeholder="Rossi" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label for="nome">Nome</label>
+                    <input type="text" id="nome" placeholder="Mario" autocomplete="off">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="giorno">Giorno</label>
+                        <input type="number" id="giorno" min="1" max="31" placeholder="01" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="mese">Mese</label>
+                        <select id="mese">
+                            <option value="">Seleziona</option>
+                            <option value="A">Gennaio</option>
+                            <option value="B">Febbraio</option>
+                            <option value="C">Marzo</option>
+                            <option value="D">Aprile</option>
+                            <option value="E">Maggio</option>
+                            <option value="H">Giugno</option>
+                            <option value="L">Luglio</option>
+                            <option value="M">Agosto</option>
+                            <option value="P">Settembre</option>
+                            <option value="R">Ottobre</option>
+                            <option value="S">Novembre</option>
+                            <option value="T">Dicembre</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="anno">Anno</label>
+                        <input type="number" id="anno" min="1900" max="2024" placeholder="1985" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="sesso">Sesso</label>
+                    <select id="sesso">
+                        <option value="">Seleziona</option>
+                        <option value="M">Maschio</option>
+                        <option value="F">Femmina</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="comune">Codice Catastale Comune</label>
+                    <input type="text" id="comune" maxlength="4" placeholder="H501" autocomplete="off">
+                    <small>Es: H501 per Roma, F205 per Milano</small>
+                </div>
+
+                <div id="generateError" class="error"></div>
+
+                <button type="submit" class="btn">Genera Codice Fiscale</button>
+            </form>
+
+            <form id="cfForm" class="tab-content">
                 <div class="form-group">
                     <label for="cfInput">Codice Fiscale (primi 15 caratteri)</label>
                     <input 
@@ -295,6 +428,67 @@
 
         const checkDigits = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
+        // Funzioni per il calcolo del codice fiscale completo
+        function extractConsonants(str) {
+            return str.toUpperCase().replace(/[^BCDFGHJKLMNPQRSTVWXYZ]/g, '');
+        }
+
+        function extractVowels(str) {
+            return str.toUpperCase().replace(/[^AEIOU]/g, '');
+        }
+
+        function padRight(str, len, char = 'X') {
+            return (str + char.repeat(len)).substring(0, len);
+        }
+
+        function calculateCognome(cognome) {
+            const consonants = extractConsonants(cognome);
+            const vowels = extractVowels(cognome);
+            return padRight(consonants + vowels, 3);
+        }
+
+        function calculateNome(nome) {
+            const consonants = extractConsonants(nome);
+            const vowels = extractVowels(nome);
+            
+            if (consonants.length >= 4) {
+                // Prendi 1°, 3° e 4° consonante
+                return consonants[0] + consonants[2] + consonants[3];
+            }
+            return padRight(consonants + vowels, 3);
+        }
+
+        function calculateAnno(anno) {
+            return String(anno).slice(-2);
+        }
+
+        function calculateGiorno(giorno, sesso) {
+            const day = parseInt(giorno);
+            return String(sesso === 'F' ? day + 40 : day).padStart(2, '0');
+        }
+
+        function generateCodiceFiscale(cognome, nome, giorno, mese, anno, sesso, comune) {
+            if (!cognome || !nome || !giorno || !mese || !anno || !sesso || !comune) {
+                throw new Error('Tutti i campi sono obbligatori');
+            }
+
+            const cfCognome = calculateCognome(cognome);
+            const cfNome = calculateNome(nome);
+            const cfAnno = calculateAnno(anno);
+            const cfMese = mese.toUpperCase();
+            const cfGiorno = calculateGiorno(giorno, sesso);
+            const cfComune = comune.toUpperCase();
+
+            const cfPartial = cfCognome + cfNome + cfAnno + cfMese + cfGiorno + cfComune;
+
+            if (cfPartial.length !== 15) {
+                throw new Error('Errore nel calcolo del codice fiscale');
+            }
+
+            const checkDigit = calculateCheckDigit(cfPartial);
+            return cfPartial + checkDigit;
+        }
+
         function calculateCheckDigit(cf) {
             // Rimuovi spazi e converti in maiuscolo
             cf = cf.replace(/\s/g, '').toUpperCase();
@@ -331,6 +525,62 @@
             return checkDigits[remainder];
         }
 
+        // Gestione tabs
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetTab = tab.dataset.tab;
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                
+                tab.classList.add('active');
+                
+                if (targetTab === 'generate') {
+                    document.getElementById('generateForm').classList.add('active');
+                } else {
+                    document.getElementById('cfForm').classList.add('active');
+                }
+                
+                // Reset risultati e errori
+                resultDiv.classList.remove('show');
+                document.getElementById('error').classList.remove('show');
+                document.getElementById('generateError').classList.remove('show');
+            });
+        });
+
+        // Form generazione codice fiscale
+        const generateForm = document.getElementById('generateForm');
+        const generateError = document.getElementById('generateError');
+        
+        generateForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const cognome = document.getElementById('cognome').value.trim();
+            const nome = document.getElementById('nome').value.trim();
+            const giorno = document.getElementById('giorno').value;
+            const mese = document.getElementById('mese').value;
+            const anno = document.getElementById('anno').value;
+            const sesso = document.getElementById('sesso').value;
+            const comune = document.getElementById('comune').value.trim();
+
+            try {
+                const codiceFiscale = generateCodiceFiscale(cognome, nome, giorno, mese, anno, sesso, comune);
+                
+                checkDigitDiv.textContent = codiceFiscale.slice(-1);
+                completeCFDiv.textContent = codiceFiscale;
+                resultDiv.classList.add('show');
+                generateError.classList.remove('show');
+            } catch (error) {
+                generateError.textContent = error.message;
+                generateError.classList.add('show');
+                resultDiv.classList.remove('show');
+            }
+        });
+
+        // Form verifica cifra di controllo
         const form = document.getElementById('cfForm');
         const input = document.getElementById('cfInput');
         const errorDiv = document.getElementById('error');
